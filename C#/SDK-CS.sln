@@ -1,0 +1,49 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27130.2036
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PluginFeedParser", "PluginFeedParser\PluginFeedParser.csproj", "{2F6F962A-0478-4051-B071-7DE6EAD6D84F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PluginScale", "PluginScale\PluginScale.csproj", "{F43D0210-4CED-49B0-93C4-C694EFB44282}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|Any CPU = Release|Any CPU
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{2F6F962A-0478-4051-B071-7DE6EAD6D84F}.Debug|Any CPU.ActiveCfg = Debug|x86
+		{2F6F962A-0478-4051-B071-7DE6EAD6D84F}.Debug|x64.ActiveCfg = Debug|x64
+		{2F6F962A-0478-4051-B071-7DE6EAD6D84F}.Debug|x64.Build.0 = Debug|x64
+		{2F6F962A-0478-4051-B071-7DE6EAD6D84F}.Debug|x86.ActiveCfg = Debug|x86
+		{2F6F962A-0478-4051-B071-7DE6EAD6D84F}.Debug|x86.Build.0 = Debug|x86
+		{2F6F962A-0478-4051-B071-7DE6EAD6D84F}.Release|Any CPU.ActiveCfg = Release|x86
+		{2F6F962A-0478-4051-B071-7DE6EAD6D84F}.Release|x64.ActiveCfg = Release|x64
+		{2F6F962A-0478-4051-B071-7DE6EAD6D84F}.Release|x64.Build.0 = Release|x64
+		{2F6F962A-0478-4051-B071-7DE6EAD6D84F}.Release|x86.ActiveCfg = Release|x86
+		{2F6F962A-0478-4051-B071-7DE6EAD6D84F}.Release|x86.Build.0 = Release|x86
+		{F43D0210-4CED-49B0-93C4-C694EFB44282}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F43D0210-4CED-49B0-93C4-C694EFB44282}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F43D0210-4CED-49B0-93C4-C694EFB44282}.Debug|x64.ActiveCfg = Debug|x64
+		{F43D0210-4CED-49B0-93C4-C694EFB44282}.Debug|x64.Build.0 = Debug|x64
+		{F43D0210-4CED-49B0-93C4-C694EFB44282}.Debug|x86.ActiveCfg = Debug|x86
+		{F43D0210-4CED-49B0-93C4-C694EFB44282}.Debug|x86.Build.0 = Debug|x86
+		{F43D0210-4CED-49B0-93C4-C694EFB44282}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F43D0210-4CED-49B0-93C4-C694EFB44282}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F43D0210-4CED-49B0-93C4-C694EFB44282}.Release|x64.ActiveCfg = Release|x64
+		{F43D0210-4CED-49B0-93C4-C694EFB44282}.Release|x64.Build.0 = Release|x64
+		{F43D0210-4CED-49B0-93C4-C694EFB44282}.Release|x86.ActiveCfg = Release|x86
+		{F43D0210-4CED-49B0-93C4-C694EFB44282}.Release|x86.Build.0 = Release|x86
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {6C81A003-9695-4748-9C5A-8A738767B03B}
+	EndGlobalSection
+EndGlobal

@@ -1,0 +1,6 @@
+﻿<wpf:ResourceDictionary xml:space="preserve" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:s="clr-namespace:System;assembly=mscorlib" xmlns:ss="urn:shemas-jetbrains-com:settings-storage-xaml" xmlns:wpf="http://schemas.microsoft.com/winfx/2006/xaml/presentation">
+	<s:String x:Key="/Default/Environment/InjectedLayers/FileInjectedLayer/=D3DF23721FF80D4CBE8ED819AAF068EE/AbsolutePath/@EntryValue">D:\borck\Workspaces\Visual Studio\Rainmeter-Simple-HiDPI-Aware-Plugins\C#\ReSharper.DotSettings</s:String>
+	<s:String x:Key="/Default/Environment/InjectedLayers/FileInjectedLayer/=D3DF23721FF80D4CBE8ED819AAF068EE/RelativePath/@EntryValue">..\ReSharper.DotSettings</s:String>
+	<s:Boolean x:Key="/Default/Environment/InjectedLayers/FileInjectedLayer/=D3DF23721FF80D4CBE8ED819AAF068EE/@KeyIndexDefined">True</s:Boolean>
+	<s:Boolean x:Key="/Default/Environment/InjectedLayers/InjectedLayerCustomization/=FileD3DF23721FF80D4CBE8ED819AAF068EE/@KeyIndexDefined">True</s:Boolean>
+	<s:Double x:Key="/Default/Environment/InjectedLayers/InjectedLayerCustomization/=FileD3DF23721FF80D4CBE8ED819AAF068EE/RelativePriority/@EntryValue">1</s:Double></wpf:ResourceDictionary>
