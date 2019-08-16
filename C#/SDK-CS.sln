@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PluginFeedParser", "PluginF
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PluginScale", "PluginScale\PluginScale.csproj", "{F43D0210-4CED-49B0-93C4-C694EFB44282}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PluginFeedParserTests", "PluginFeedParserTests\PluginFeedParserTests.csproj", "{B675BE0D-1FE7-4D89-984C-A7218342F41D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +41,18 @@ Global
 		{F43D0210-4CED-49B0-93C4-C694EFB44282}.Release|x64.Build.0 = Release|x64
 		{F43D0210-4CED-49B0-93C4-C694EFB44282}.Release|x86.ActiveCfg = Release|x86
 		{F43D0210-4CED-49B0-93C4-C694EFB44282}.Release|x86.Build.0 = Release|x86
+		{B675BE0D-1FE7-4D89-984C-A7218342F41D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B675BE0D-1FE7-4D89-984C-A7218342F41D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B675BE0D-1FE7-4D89-984C-A7218342F41D}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{B675BE0D-1FE7-4D89-984C-A7218342F41D}.Debug|x64.Build.0 = Debug|Any CPU
+		{B675BE0D-1FE7-4D89-984C-A7218342F41D}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{B675BE0D-1FE7-4D89-984C-A7218342F41D}.Debug|x86.Build.0 = Debug|Any CPU
+		{B675BE0D-1FE7-4D89-984C-A7218342F41D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B675BE0D-1FE7-4D89-984C-A7218342F41D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B675BE0D-1FE7-4D89-984C-A7218342F41D}.Release|x64.ActiveCfg = Release|Any CPU
+		{B675BE0D-1FE7-4D89-984C-A7218342F41D}.Release|x64.Build.0 = Release|Any CPU
+		{B675BE0D-1FE7-4D89-984C-A7218342F41D}.Release|x86.ActiveCfg = Release|Any CPU
+		{B675BE0D-1FE7-4D89-984C-A7218342F41D}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

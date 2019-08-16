@@ -1,0 +1,22 @@
+﻿<Window x:Class="RssTest.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:RssTest"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="450" Width="800">
+  <Grid>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="*" />
+    </Grid.RowDefinitions>
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="*" />
+      <ColumnDefinition Width="Auto" />
+    </Grid.ColumnDefinitions>
+    <TextBox x:Name="Url" Grid.Row="0" Grid.Column="0">http://www.heise.de/newsticker/heise-top-atom.xml</TextBox>
+    <Button Grid.Row="0" Grid.Column="1" Click="Button_Click"> Read</Button>
+    <ListBox x:Name="FeedContent" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" />
+  </Grid>
+</Window>

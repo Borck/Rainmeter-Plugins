@@ -83,12 +83,16 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ArrayX.cs" />
     <Compile Include="AssemblyInfo.cs" />
+    <Compile Include="Timer\IUpdateRate.cs" />
     <Compile Include="MeasureType.cs" />
     <Compile Include="PluginFeedParser.cs" />
     <Compile Include="$(SolutionDir)..\API\RainmeterAPI.cs" />
     <Compile Include="SyndicationFeedX.cs" />
     <Compile Include="SyndicationFeedProvider.cs" />
+    <Compile Include="Timer\Ticker.cs" />
+    <Compile Include="Timer\TimeRate.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

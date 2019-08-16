@@ -19,10 +19,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Runtime.InteropServices;
 using System.ServiceModel.Syndication;
 using System.Threading;
 using System.Threading.Tasks;
+using PluginFeedParser.Timer;
+using PluginNewsfeedParser;
 using Rainmeter;
 
 // Overview: This example demonstrates a basic implementation of a parent/child
@@ -76,20 +79,23 @@ using Rainmeter;
 
 
 
-namespace PluginNewsfeedParser {
+namespace PluginFeedParser {
   internal class Measure {
+    protected readonly API Api;
     internal MeasureType Type = MeasureType.NONE;
     internal int ItemIndex { get; private set; }
+    internal string Format { get; private set; }
 
+    internal IntPtr Skin => Api.GetSkin();
+    internal string Name => Api.GetMeasureName();
+    internal string SkinName => Api.GetSkinName();
 
-    internal readonly IntPtr Skin;
-    internal readonly string Name;
+    private const string DEFAULT_TIMESTAMPFORMAT = "T";
 
 
 
     internal Measure(API api) {
-      Skin = api.GetSkin();
-      Name = api.GetMeasureName();
+      Api = api;
     }
 
 
@@ -100,6 +106,7 @@ namespace PluginNewsfeedParser {
 
     internal virtual void Reload(API api, ref double maxValue) {
       ItemIndex = api.ReadInt( "FeedIndex", -1 );
+      Format = api.ReadString( "Format", DEFAULT_TIMESTAMPFORMAT );
 
       var type = api.ReadString( "Type", "" ).ToLowerInvariant();
       switch (type) {
@@ -114,7 +121,7 @@ namespace PluginNewsfeedParser {
           Type = MeasureType.NONE;
           break;
         default:
-          Plugin.Log( API.LogType.Error, "Type=" + type + " not valid" );
+          Log( API.LogType.Error, "Type=" + type + " not valid" );
           break;
       }
     }
@@ -130,12 +137,29 @@ namespace PluginNewsfeedParser {
     internal virtual string GetString() {
       return "";
     }
+
+
+
+    protected void FireEvent(string eventName) {
+      var command = Api.ReadString( eventName, default(string) );
+      if (command != default(string)) {
+        API.Execute( Api.GetSkin(), command );
+      }
+    }
+
+
+
+    protected void Log(API.LogType type, string message) {
+      API.Log( type, $"{SkinName}:{Name}: {message}" );
+    }
   }
 
 
 
   internal class ParentMeasure : Measure {
     private const int DEFAULT_LOAD_TIMEOUT_MILLIS = 30000;
+    private const int DEFAULT_UPDATERATE = 600;
+
 
     // This list of all parent measures is used by the child measures to find their parent.
     internal static Dictionary<Tuple<IntPtr, string>, ParentMeasure> ParentMeasures =
@@ -148,8 +172,8 @@ namespace PluginNewsfeedParser {
     private TimeSpan _timeout;
 
     public bool Parallel { get; private set; }
-    public int UpdateRate { get; private set; }
-    private int _updateCount = 0;
+    private IUpdateRate _updateRate;
+    public List<Tuple<string, string>> Prefixes { get; private set; }
 
 
 
@@ -167,11 +191,61 @@ namespace PluginNewsfeedParser {
 
     internal override void Reload(API api, ref double maxValue) {
       base.Reload( api, ref maxValue );
-
       _urls = ReadUrls( api );
       _timeout = TimeSpan.FromMilliseconds( api.ReadInt( "Timeout", DEFAULT_LOAD_TIMEOUT_MILLIS ) );
       Parallel = api.ReadInt( "Parallel", 0 ) == 1;
-      UpdateRate = Math.Max( api.ReadInt( "UpdateRate", 600 ), 1 );
+      _updateRate = CreateUpdateRate( api );
+
+      Log( API.LogType.Debug, "FeedParser reloaded" );
+
+      //TODO crash if Prefixes=#Prefixes# and #Prefixes# is not set
+      Prefixes = ReadPrefixes( api );
+    }
+
+
+
+    private IUpdateRate CreateUpdateRate(API api) {
+      const string keyUpdateRate = "UpdateRate";
+      var updateRate = api.ReadString( keyUpdateRate, DEFAULT_UPDATERATE.ToString() );
+      if (Ticker.TryParse( updateRate, out var ticker )) {
+        return ticker;
+      }
+
+      if (TimeRate.TryParse( updateRate, out var timeRate )) {
+        return timeRate;
+      }
+
+      Log( API.LogType.Error,
+           $@"{keyUpdateRate}={updateRate} is not readable. Use a number like in 'UpdateDivider' or a time based 
+notation like hh:mm:ss, i.e. each 30 min: '0:30:0'. Switched to default {keyUpdateRate}" );
+      return new Ticker( DEFAULT_UPDATERATE );
+    }
+
+
+
+    private List<Tuple<string, string>> ReadPrefixes(API api) {
+      var prefixesStr = api.ReadString( "Prefixes", "" );
+      if (string.IsNullOrWhiteSpace( prefixesStr )) {
+        return new List<Tuple<string, string>>();
+      }
+
+      var prefixes = new List<Tuple<string, string>>();
+      foreach (var prefix in prefixesStr.Split( new[] {' '}, StringSplitOptions.RemoveEmptyEntries )) {
+        var prefixTuple = Separate( prefix, '=' );
+        prefixes.Add( prefixTuple );
+      }
+
+      return prefixes;
+    }
+
+
+
+    private static Tuple<string, string> Separate(string str, char separator) {
+      var idx = str.IndexOf( separator );
+      return new Tuple<string, string>(
+        str.Substring( 0, idx ),
+        str.Substring( idx + 1 )
+      );
     }
 
 
@@ -182,7 +256,7 @@ namespace PluginNewsfeedParser {
 
       var duplicatesCount = urlsRaw.Length - urls.Length;
       if (duplicatesCount > 0) {
-        Plugin.Log( API.LogType.Warning, $"[{Name}] {duplicatesCount} duplicates found in Url" );
+        Log( API.LogType.Warning, $"[{Name}] {duplicatesCount} duplicates found in Url" );
       }
 
       return urls;
@@ -191,8 +265,7 @@ namespace PluginNewsfeedParser {
 
 
     internal override double Update() {
-      var doUpdate = _updateCount == 0;
-      _updateCount = ( _updateCount + 1 ) % UpdateRate;
+      var doUpdate = _updateRate.Test();
       if (!doUpdate) {
         return 0.0;
       }
@@ -202,8 +275,7 @@ namespace PluginNewsfeedParser {
         return 0;
       }
 
-      Plugin.Log( API.LogType.Debug, $"Fetching {urls.Length} feed(s): {string.Join( ", ", urls )}" );
-
+      Log( API.LogType.Debug, $"Fetching {urls.Length} feed(s): {string.Join( ", ", urls )}" );
       var fetches = Parallel && urls.Length > 1
                       ? ReadFeedsParallel( urls )
                       : ReadFeeds( urls );
@@ -212,7 +284,7 @@ namespace PluginNewsfeedParser {
       var items = feeds.Values.GetItemsOrderByPublishDateBeginNewest();
       _feeds = feeds;
       _items = items.ToArray();
-
+      FireEvent( "FinishAction" );
       return 0.0;
     }
 
@@ -243,7 +315,7 @@ namespace PluginNewsfeedParser {
       //Cancel the task
       tokenSource.Cancel();
 
-      task.Wait(); //Waiting for the task to throw OperationCanceledException
+      task.Wait( tokenSource.Token ); //Waiting for the task to throw OperationCanceledException
       return defaultValue;
     }
 
@@ -256,31 +328,33 @@ namespace PluginNewsfeedParser {
         fetches.Add( new Tuple<string, Task<SyndicationFeed>>( url, fetch ) );
       }
 
-      if (!Task.WaitAll( fetches.Select( fetch => fetch.Item2 ).ToArray() as Task<SyndicationFeed>[], _timeout ))
-        Plugin.Log( API.LogType.Warning, $"Not all feeds could be fetched, urls: {string.Join( ", ", urls )} " );
+      var feedResults = fetches.Select( fetch => fetch.Item2 ).Cast<Task>().ToArray();
+      if (!Task.WaitAll( feedResults, _timeout ))
+        Log( API.LogType.Warning,
+             $"Not all feeds could be fetched, all requested urls: {string.Join( ", ", urls )} " );
 
       return fetches.Select(
         fetch =>
           new Tuple<string, SyndicationFeed>(
             fetch.Item1,
-            GetResultNowOrDefault( fetch.Item2 ) ) );
+            GetResultOrDefault( fetch.Item2 ) ) );
     }
 
 
 
-    private static SyndicationFeed ReadFeed(string url) {
+    private SyndicationFeed ReadFeed(string url) {
       try {
         return SyndicationFeedX.ReadFeed( url );
       }
       catch (Exception e) {
-        Plugin.Log( API.LogType.Error, "Failed to read feed from url: " + e.Message );
-        return null;
+        Log( API.LogType.Error, $"Failed to read feed from url {url}: {e.Message}" );
+        return default(SyndicationFeed);
       }
     }
 
 
 
-    private static T GetResultNowOrDefault<T>(Task<T> task) {
+    private static T GetResultOrDefault<T>(Task<T> task) {
       return task.IsCompleted
                ? task.Result
                : default(T);
@@ -308,22 +382,20 @@ namespace PluginNewsfeedParser {
 
 
 
-    internal string GetString(int itemIndex, MeasureType type) {
+    internal string GetString(Measure measure) {
       var items = _items;
-      if (itemIndex < 0 || itemIndex >= items.Length) {
-        return "";
-      }
-
-      var item = items[itemIndex];
-      switch (type) {
+      switch (measure.Type) {
         case MeasureType.TITLE:
-          return item.Title.Text;
-        case MeasureType.URL:
-          if (item.Links.Any()) {
-            return item.Links[0].Uri.OriginalString;
+          if (!items.TryGet( measure.ItemIndex, out var item1 )) {
+            return "";
           }
 
-          break;
+          var uri = GetFirstOriginalUriOrDefault( item1, null );
+          return GetPrefix( uri ) + DecodeTitle( item1.Title.Text );
+        case MeasureType.URL:
+          return items.TryGet( measure.ItemIndex, out var item2 )
+                   ? GetFirstOriginalUriOrDefault( item2, "" )
+                   : "";
       }
 
       return "";
@@ -331,8 +403,43 @@ namespace PluginNewsfeedParser {
 
 
 
+    private static string DecodeTitle(string title) {
+      var titleDec = WebUtility.HtmlDecode( title );
+      var iBreak = titleDec.IndexOf( Environment.NewLine, StringComparison.InvariantCulture );
+      return iBreak >= 0
+               ? titleDec.Substring( 0, iBreak )
+               : titleDec;
+    }
+
+
+
+    private string GetPrefix(string uri) {
+      if (uri == null) {
+        return "";
+      }
+
+      foreach (var prefix in Prefixes) {
+        var uriPrefix = prefix.Item1;
+        if (uri.StartsWith( uriPrefix )) {
+          return prefix.Item2 + " ";
+        }
+      }
+
+      return "";
+    }
+
+
+
+    private static string GetFirstOriginalUriOrDefault(SyndicationItem item, string defaultUri) {
+      return item.Links.Any()
+               ? item.Links[0].Uri.OriginalString
+               : defaultUri;
+    }
+
+
+
     internal override string GetString() {
-      return GetString( ItemIndex, Type );
+      return GetString( this );
     }
   }
 
@@ -356,7 +463,7 @@ namespace PluginNewsfeedParser {
       _parentMeasure = GetParentMeasure( parentName, skin );
 
       if (_parentMeasure == null) {
-        Plugin.Log( API.LogType.Error, "Parent=" + parentName + " not valid" );
+        Log( API.LogType.Error, "Parent=" + parentName + " not valid" );
       }
     }
 
@@ -366,7 +473,7 @@ namespace PluginNewsfeedParser {
       return ParentMeasure.ParentMeasures.TryGetValue( new Tuple<IntPtr, string>( skin, parentName ),
                                                        out var parentMeasure )
                ? parentMeasure
-               : null;
+               : default(ParentMeasure);
     }
 
 
@@ -378,14 +485,13 @@ namespace PluginNewsfeedParser {
 
 
     internal override string GetString() {
-      return _parentMeasure?.GetString( ItemIndex, Type ) ?? "";
+      return _parentMeasure?.GetString( this ) ?? "";
     }
   }
 
 
 
   public static class Plugin {
-    private const string MESSAGE_PREFIX = "FeedParser.dll: ";
     private static IntPtr _stringBuffer = IntPtr.Zero;
 
 
@@ -399,7 +505,6 @@ namespace PluginNewsfeedParser {
     [DllExport]
     public static void Initialize(ref IntPtr data, IntPtr rm) {
       var api = new API( rm );
-
       var measure =
         string.IsNullOrEmpty( api.ReadString( "Parent", default(string) ) )
           ? new ParentMeasure( api )
@@ -451,12 +556,6 @@ namespace PluginNewsfeedParser {
       }
 
       return _stringBuffer;
-    }
-
-
-
-    internal static void Log(API.LogType type, string message) {
-      API.Log( type, MESSAGE_PREFIX + message );
     }
   }
 }
