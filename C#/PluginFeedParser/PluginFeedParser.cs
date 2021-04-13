@@ -90,12 +90,13 @@ namespace PluginFeedParser {
     internal string Name => Api.GetMeasureName();
     internal string SkinName => Api.GetSkinName();
 
-    private const string DEFAULT_TIMESTAMPFORMAT = "T";
+    private const string DEFAULT_TIMESTAMP_FORMAT = "T";
 
 
 
     internal Measure(API api) {
       Api = api;
+      ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12; //some feed provider refusing TLS1.0
     }
 
 
@@ -106,7 +107,7 @@ namespace PluginFeedParser {
 
     internal virtual void Reload(API api, ref double maxValue) {
       ItemIndex = api.ReadInt( "FeedIndex", -1 );
-      Format = api.ReadString( "Format", DEFAULT_TIMESTAMPFORMAT );
+      Format = api.ReadString( "Format", DEFAULT_TIMESTAMP_FORMAT );
 
       var type = api.ReadString( "Type", "" ).ToLowerInvariant();
       switch (type) {
