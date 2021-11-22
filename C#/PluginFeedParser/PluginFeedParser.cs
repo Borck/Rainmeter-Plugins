@@ -90,12 +90,13 @@ namespace PluginFeedParser {
     internal string Name => Api.GetMeasureName();
     internal string SkinName => Api.GetSkinName();
 
-    private const string DEFAULT_TIMESTAMPFORMAT = "T";
+    private const string DEFAULT_TIMESTAMP_FORMAT = "T";
 
 
 
     internal Measure(API api) {
       Api = api;
+      ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12; //some feed provider refuse TLS 1.0
     }
 
 
@@ -106,7 +107,7 @@ namespace PluginFeedParser {
 
     internal virtual void Reload(API api, ref double maxValue) {
       ItemIndex = api.ReadInt( "FeedIndex", -1 );
-      Format = api.ReadString( "Format", DEFAULT_TIMESTAMPFORMAT );
+      Format = api.ReadString( "Format", DEFAULT_TIMESTAMP_FORMAT );
 
       var type = api.ReadString( "Type", "" ).ToLowerInvariant();
       switch (type) {
@@ -230,7 +231,7 @@ notation like hh:mm:ss, i.e. each 30 min: '0:30:0'. Switched to default {keyUpda
       }
 
       var prefixes = new List<Tuple<string, string>>();
-      foreach (var prefix in prefixesStr.Split( new[] {' '}, StringSplitOptions.RemoveEmptyEntries )) {
+      foreach (var prefix in prefixesStr.Split( new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries )) {
         var prefixTuple = Separate( prefix, '=' );
         prefixes.Add( prefixTuple );
       }
@@ -251,7 +252,7 @@ notation like hh:mm:ss, i.e. each 30 min: '0:30:0'. Switched to default {keyUpda
 
 
     private string[] ReadUrls(API api) {
-      var urlsRaw = api.ReadString( "Url", "" ).Split( new[] {' '}, StringSplitOptions.RemoveEmptyEntries );
+      var urlsRaw = api.ReadString( "Url", "" ).Split( new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries );
       var urls = urlsRaw.Distinct().ToArray();
 
       var duplicatesCount = urlsRaw.Length - urls.Length;
@@ -307,7 +308,7 @@ notation like hh:mm:ss, i.e. each 30 min: '0:30:0'. Switched to default {keyUpda
       var task = Task.Factory.StartNew( action, tokenSource.Token ); //Execute a long running process
 
       //Check the task is delaying
-      if (Task.WaitAll( new Task[] {task}, timeout )) {
+      if (Task.WaitAll( new Task[] { task }, timeout )) {
         return task.Result;
       }
 
@@ -497,7 +498,7 @@ notation like hh:mm:ss, i.e. each 30 min: '0:30:0'. Switched to default {keyUpda
 
 
     private static Measure AsMeasure(IntPtr measurePtr) {
-      return (Measure) GCHandle.FromIntPtr( measurePtr ).Target;
+      return (Measure)GCHandle.FromIntPtr( measurePtr ).Target;
     }
 
 
@@ -544,7 +545,7 @@ notation like hh:mm:ss, i.e. each 30 min: '0:30:0'. Switched to default {keyUpda
 
     [DllExport]
     public static IntPtr GetString(IntPtr data) {
-      var measure = (Measure) GCHandle.FromIntPtr( data ).Target;
+      var measure = (Measure)GCHandle.FromIntPtr( data ).Target;
       if (_stringBuffer != IntPtr.Zero) {
         Marshal.FreeHGlobal( _stringBuffer );
         _stringBuffer = IntPtr.Zero;
