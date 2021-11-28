@@ -85,6 +85,7 @@
   <ItemGroup>
     <Compile Include="ArrayX.cs" />
     <Compile Include="AssemblyInfo.cs" />
+    <Compile Include="SyndicationFeedInfo.cs" />
     <Compile Include="Timer\IUpdateRate.cs" />
     <Compile Include="MeasureType.cs" />
     <Compile Include="PluginFeedParser.cs" />

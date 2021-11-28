@@ -1,7 +1,7 @@
 ﻿using System.Reflection;
 
 [assembly: AssemblyCopyright("© 2021 - Christian Borck")]
-[assembly: AssemblyVersion("0.2.1.0")]
+[assembly: AssemblyVersion("0.3.0.0")]
 #if X64
 [assembly: AssemblyInformationalVersion( "3.0.2.2161 (64-bit)" )]
 #else
@@ -9,5 +9,5 @@
 #endif
 [assembly: AssemblyProduct( "Rainmeter" )]
 [assembly: AssemblyTitle( "NewsfeedParser" )]
-[assembly: AssemblyFileVersion("0.2.1.0")]
+[assembly: AssemblyFileVersion("0.3.0.0")]
 

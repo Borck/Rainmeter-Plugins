@@ -4,7 +4,7 @@
       var exists = index >= 0 && index < array.Length;
       value = exists
                 ? array[index]
-                : default(T);
+                : default;
       return exists;
     }
   }

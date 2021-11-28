@@ -34,7 +34,7 @@ namespace PluginFeedParser.Timer {
       var parsed = TimeSpan.TryParse( s, out var span );
       timeRate = parsed
                    ? new TimeRate( span )
-                   : default(TimeRate);
+                   : default;
       return parsed;
     }
 

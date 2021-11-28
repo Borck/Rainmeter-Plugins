@@ -142,8 +142,8 @@ namespace PluginFeedParser {
 
 
     protected void FireEvent(string eventName) {
-      var command = Api.ReadString( eventName, default(string) );
-      if (command != default(string)) {
+      var command = Api.ReadString( eventName, default );
+      if (command != default) {
         API.Execute( Api.GetSkin(), command );
       }
     }
@@ -167,14 +167,14 @@ namespace PluginFeedParser {
       new Dictionary<Tuple<IntPtr, string>, ParentMeasure>();
 
 
-    private string[] _urls = new string[0];
-    private IDictionary<string, SyndicationFeed> _feeds = new Dictionary<string, SyndicationFeed>();
-    private SyndicationItem[] _items = new SyndicationItem[0];
+    private SyndicationFeedInfo[] _urls = new SyndicationFeedInfo[0];
+    private IDictionary<SyndicationFeedInfo, SyndicationFeed> _feeds = new Dictionary<SyndicationFeedInfo, SyndicationFeed>();
+    private Tuple<SyndicationFeedInfo, SyndicationItem>[] _itemsChronological = new Tuple<SyndicationFeedInfo, SyndicationItem>[0];
     private TimeSpan _timeout;
 
     public bool Parallel { get; private set; }
     private IUpdateRate _updateRate;
-    public List<Tuple<string, string>> Prefixes { get; private set; }
+    public List<SyndicationFeedInfo> Prefixes { get; private set; }
 
 
 
@@ -224,15 +224,15 @@ notation like hh:mm:ss, i.e. each 30 min: '0:30:0'. Switched to default {keyUpda
 
 
 
-    private List<Tuple<string, string>> ReadPrefixes(API api) {
+    private List<SyndicationFeedInfo> ReadPrefixes(API api) {
       var prefixesStr = api.ReadString( "Prefixes", "" );
       if (string.IsNullOrWhiteSpace( prefixesStr )) {
-        return new List<Tuple<string, string>>();
+        return new List<SyndicationFeedInfo>();
       }
 
-      var prefixes = new List<Tuple<string, string>>();
+      var prefixes = new List<SyndicationFeedInfo>();
       foreach (var prefix in prefixesStr.Split( new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries )) {
-        var prefixTuple = Separate( prefix, '=' );
+        var prefixTuple = SeparatePrefix( prefix, '=' );
         prefixes.Add( prefixTuple );
       }
 
@@ -241,9 +241,9 @@ notation like hh:mm:ss, i.e. each 30 min: '0:30:0'. Switched to default {keyUpda
 
 
 
-    private static Tuple<string, string> Separate(string str, char separator) {
+    private static SyndicationFeedInfo SeparatePrefix(string str, char separator) {
       var idx = str.IndexOf( separator );
-      return new Tuple<string, string>(
+      return new SyndicationFeedInfo(
         str.Substring( 0, idx ),
         str.Substring( idx + 1 )
       );
@@ -251,16 +251,11 @@ notation like hh:mm:ss, i.e. each 30 min: '0:30:0'. Switched to default {keyUpda
 
 
 
-    private string[] ReadUrls(API api) {
-      var urlsRaw = api.ReadString( "Url", "" ).Split( new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries );
-      var urls = urlsRaw.Distinct().ToArray();
-
-      var duplicatesCount = urlsRaw.Length - urls.Length;
-      if (duplicatesCount > 0) {
-        Log( API.LogType.Warning, $"[{Name}] {duplicatesCount} duplicates found in Url" );
-      }
-
-      return urls;
+    private SyndicationFeedInfo[] ReadUrls(API api) {
+      return api.ReadString( "Url", "" )
+                .Split( new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries )
+                .Select( SyndicationFeedInfo.FromTokens )
+                .ToArray();
     }
 
 
@@ -282,20 +277,20 @@ notation like hh:mm:ss, i.e. each 30 min: '0:30:0'. Switched to default {keyUpda
                       : ReadFeeds( urls );
 
       var feeds = CompleteFeeds( fetches );
-      var items = feeds.Values.GetItemsOrderByPublishDateBeginNewest();
+      var items = feeds.GetItemsOrderByPublishDateBeginNewest();
       _feeds = feeds;
-      _items = items.ToArray();
+      _itemsChronological = items.ToArray();
       FireEvent( "FinishAction" );
       return 0.0;
     }
 
 
 
-    private IEnumerable<Tuple<string, SyndicationFeed>> ReadFeeds(string[] urls) {
-      var fetches = new List<Tuple<string, SyndicationFeed>>();
-      foreach (var url in urls) {
-        var feed = RunWithTimeout( () => ReadFeed( url ), _timeout, default(SyndicationFeed) );
-        fetches.Add( new Tuple<string, SyndicationFeed>( url, feed ) );
+    private IEnumerable<Tuple<SyndicationFeedInfo, SyndicationFeed>> ReadFeeds(SyndicationFeedInfo[] feedInfos) {
+      var fetches = new List<Tuple<SyndicationFeedInfo, SyndicationFeed>>();
+      foreach (var feedInfo in feedInfos) {
+        var feed = RunWithTimeout( () => ReadFeed( feedInfo.URL ), _timeout, default );
+        fetches.Add( new Tuple<SyndicationFeedInfo, SyndicationFeed>( feedInfo, feed ) );
       }
 
       return fetches;
@@ -322,21 +317,21 @@ notation like hh:mm:ss, i.e. each 30 min: '0:30:0'. Switched to default {keyUpda
 
 
 
-    internal IEnumerable<Tuple<string, SyndicationFeed>> ReadFeedsParallel(string[] urls) {
-      var fetches = new List<Tuple<string, Task<SyndicationFeed>>>();
-      foreach (var url in urls) {
-        var fetch = Task.Factory.StartNew( () => ReadFeed( url ) );
-        fetches.Add( new Tuple<string, Task<SyndicationFeed>>( url, fetch ) );
+    internal IEnumerable<Tuple<SyndicationFeedInfo, SyndicationFeed>> ReadFeedsParallel(SyndicationFeedInfo[] feedInfos) {
+      var fetches = new List<Tuple<SyndicationFeedInfo, Task<SyndicationFeed>>>();
+      foreach (var feedInfo in feedInfos) {
+        var fetch = Task.Factory.StartNew( () => ReadFeed( feedInfo.URL ) );
+        fetches.Add( new Tuple<SyndicationFeedInfo, Task<SyndicationFeed>>( feedInfo, fetch ) );
       }
 
       var feedResults = fetches.Select( fetch => fetch.Item2 ).Cast<Task>().ToArray();
       if (!Task.WaitAll( feedResults, _timeout ))
         Log( API.LogType.Warning,
-             $"Not all feeds could be fetched, all requested urls: {string.Join( ", ", urls )} " );
+             $"Not all feeds could be fetched, all requested urls: {string.Join( ", ", feedInfos )} " );
 
       return fetches.Select(
         fetch =>
-          new Tuple<string, SyndicationFeed>(
+          new Tuple<SyndicationFeedInfo, SyndicationFeed>(
             fetch.Item1,
             GetResultOrDefault( fetch.Item2 ) ) );
     }
@@ -349,7 +344,7 @@ notation like hh:mm:ss, i.e. each 30 min: '0:30:0'. Switched to default {keyUpda
       }
       catch (Exception e) {
         Log( API.LogType.Error, $"Failed to read feed from url {url}: {e.Message}" );
-        return default(SyndicationFeed);
+        return default;
       }
     }
 
@@ -358,13 +353,13 @@ notation like hh:mm:ss, i.e. each 30 min: '0:30:0'. Switched to default {keyUpda
     private static T GetResultOrDefault<T>(Task<T> task) {
       return task.IsCompleted
                ? task.Result
-               : default(T);
+               : default;
     }
 
 
 
-    private Dictionary<string, SyndicationFeed> CompleteFeeds(IEnumerable<Tuple<string, SyndicationFeed>> fetches) {
-      var result = new Dictionary<string, SyndicationFeed>();
+    private Dictionary<SyndicationFeedInfo, SyndicationFeed> CompleteFeeds(IEnumerable<Tuple<SyndicationFeedInfo, SyndicationFeed>> fetches) {
+      var result = new Dictionary<SyndicationFeedInfo, SyndicationFeed>();
       foreach (var fetch in fetches) {
         var url = fetch.Item1;
         var feed = fetch.Item2;
@@ -384,18 +379,18 @@ notation like hh:mm:ss, i.e. each 30 min: '0:30:0'. Switched to default {keyUpda
 
 
     internal string GetString(Measure measure) {
-      var items = _items;
+      var items = _itemsChronological;
       switch (measure.Type) {
         case MeasureType.TITLE:
           if (!items.TryGet( measure.ItemIndex, out var item1 )) {
             return "";
           }
 
-          var uri = GetFirstOriginalUriOrDefault( item1, null );
-          return GetPrefix( uri ) + DecodeTitle( item1.Title.Text );
+          var uri = GetFirstOriginalUriOrDefault( item1.Item2, null );
+          return GetPrefix( item1.Item1, uri ) + DecodeTitle( item1.Item2.Title.Text );
         case MeasureType.URL:
           return items.TryGet( measure.ItemIndex, out var item2 )
-                   ? GetFirstOriginalUriOrDefault( item2, "" )
+                   ? GetFirstOriginalUriOrDefault( item2.Item2, "" )
                    : "";
       }
 
@@ -414,15 +409,19 @@ notation like hh:mm:ss, i.e. each 30 min: '0:30:0'. Switched to default {keyUpda
 
 
 
-    private string GetPrefix(string uri) {
+    private string GetPrefix(SyndicationFeedInfo feedInfo, string uri) {
+      if (feedInfo.Prefix != default) {
+        return feedInfo.Prefix + " ";
+      }
+
       if (uri == null) {
         return "";
       }
 
       foreach (var prefix in Prefixes) {
-        var uriPrefix = prefix.Item1;
+        var uriPrefix = prefix.URL;
         if (uri.StartsWith( uriPrefix )) {
-          return prefix.Item2 + " ";
+          return prefix.Prefix + " ";
         }
       }
 
@@ -474,7 +473,7 @@ notation like hh:mm:ss, i.e. each 30 min: '0:30:0'. Switched to default {keyUpda
       return ParentMeasure.ParentMeasures.TryGetValue( new Tuple<IntPtr, string>( skin, parentName ),
                                                        out var parentMeasure )
                ? parentMeasure
-               : default(ParentMeasure);
+               : default;
     }
 
 
@@ -507,7 +506,7 @@ notation like hh:mm:ss, i.e. each 30 min: '0:30:0'. Switched to default {keyUpda
     public static void Initialize(ref IntPtr data, IntPtr rm) {
       var api = new API( rm );
       var measure =
-        string.IsNullOrEmpty( api.ReadString( "Parent", default(string) ) )
+        string.IsNullOrEmpty( api.ReadString( "Parent", default ) )
           ? new ParentMeasure( api )
           : new ChildMeasure( api ) as Measure;
 

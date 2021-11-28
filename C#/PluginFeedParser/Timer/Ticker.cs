@@ -34,7 +34,7 @@ namespace PluginFeedParser.Timer {
       var parsed = int.TryParse( s, out var interval );
       ticker = parsed
                  ? new Ticker( interval )
-                 : default(Ticker);
+                 : default;
       return parsed;
     }
   }
